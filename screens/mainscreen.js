@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { Component } from 'react';
 import { createStackNavigator, createAppContainer , NavigationContainer } from 'react-navigation';
-import { Pressable, Modal, ImageBackground, Image, StyleSheet, Text, View, TextInput, FlatList, Keyboard, TouchableHighlightBase } from 'react-native';
+import { Pressable, Modal, ImageBackground, Image, StyleSheet, Text, View, TextInput, FlatList, Keyboard, TouchableHighlightBase, TouchableOpacity } from 'react-native';
 import SwipeCards from 'react-native-swipe-cards';
+import * as ImagePicker from 'expo-image-picker';
 
 import background from '../assets/background.png';
 import person from '../assets/Person.png';
@@ -11,6 +12,7 @@ import bigLogo from '../assets/bigLogo.png';
 import menu from '../assets/Burger.png';
 import reject from '../assets/reject.png';
 import accept from '../assets/accept.png';
+import ProfilePicture from './profilepicture';
 
 export default class mainScreen extends Component {
   constructor(props) {
@@ -30,6 +32,7 @@ export default class mainScreen extends Component {
       candEmail: "",
       candDisplay: "",
       candDesc: "",
+      candProfilePic: "https://thumbs.dreamstime.com/b/school-science-radiation-atom-books-bacteria-miscroscope-vector-illustration-design-144774102.jpg",
       matchDisplay: "",
       matchEmail: "",
       matchPhone: "",
@@ -43,6 +46,10 @@ export default class mainScreen extends Component {
       displayMatchEmail: "Loading...",
       displayMatchPhone: "Loading...",
       displayMatchDesc: "Loading...",
+
+      displayMatchProfilePicture: "https://thumbs.dreamstime.com/b/school-science-radiation-atom-books-bacteria-miscroscope-vector-illustration-design-144774102.jpg",
+      image: "https://thumbs.dreamstime.com/b/school-science-radiation-atom-books-bacteria-miscroscope-vector-illustration-design-144774102.jpg"
+
     };
     this.handleYup = this.handleYup.bind(this);
     this.handleNope = this.handleNope.bind(this);
@@ -73,6 +80,16 @@ export default class mainScreen extends Component {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{this.state.candDisplay}</Text>
         <Text style={styles.cardDescription}>{this.state.candDesc}</Text>
+        <View style={{elevation:2,
+            // marginTop: 100,
+            height: 100,
+            width: 100, 
+            backgroundColor:'#efefef',
+            position: "absolute", bottom: 10, left: 10,
+            borderRadius:999,
+            overflow:'hidden',}}>
+              <Image source={{ uri: this.state.candProfilePic }} style={{ width: "100%", height: "100%"}} />
+        </View>
       </View>
     )
   }
@@ -84,10 +101,16 @@ export default class mainScreen extends Component {
     console.log("group bool: " + global.group);
     if (global.group == true) {
       this.getMatchProfIndiv(val);
+
+      this.getMatchPicture(val);
+
       console.log("Got the individual's info!");
     }
     else {
       this.getMatchProfGroup(val);
+
+      this.getMatchPicture(val);
+
       console.log("Got the group info!");
     }
     
@@ -100,6 +123,67 @@ export default class mainScreen extends Component {
     this.setState({displayMatchEmail: "Loading..."});
     this.setState({displayMatchPhone: "Loading..."});
     this.setState({displayMatchDesc: "Loading..."});
+  }
+
+
+  get_content_type(uri_str)
+  {
+    let last_index_of_dot =
+      uri_str.lastIndexOf(".");
+
+    let extension_name_str =
+      uri_str.substr(last_index_of_dot + 1);
+
+    let lowercase_extension_name_str =
+      extension_name_str.toLowerCase();
+
+    // IF IT'S A BITMAP FILE
+    if(lowercase_extension_name_str === "bmp")
+    {
+      return "image/bmp";
+    }
+
+    // IF IT'S A JPEG FILE
+    else if(lowercase_extension_name_str === "jpg" || lowercase_extension_name_str === "jpeg"
+            || lowercase_extension_name_str === "jpe" || lowercase_extension_name_str === "jfif")
+    {
+      return "image/jpeg";
+    }
+
+    // IF IT'S A GIF FILE
+    else if(lowercase_extension_name_str === "gif")
+    {
+      return "image/gif";
+    }
+
+    // IF IT'S A TIFF FILE
+    else if(lowercase_extension_name_str === "tif" || lowercase_extension_name_str === "tiff")
+    {
+      return "image/tiff";
+    }
+
+    // IF IT'S A PNG FILE
+    else if(lowercase_extension_name_str === "png")
+    {
+      return "image/png";
+    }
+
+    // OTHERWISE, IT'S AN UNRECOGNIZED IMAGE FILE
+    else
+    {
+      return "";
+    }
+  }
+
+  get_file_name(uri_str)
+  {
+    let last_index_of_slash =
+      uri_str.lastIndexOf("/");
+
+    let file_name_str =
+      uri_str.substr(last_index_of_slash + 1);
+
+    return file_name_str;
   }
 
   getMatchProfIndiv = async (val) => {
@@ -218,6 +302,9 @@ export default class mainScreen extends Component {
     console.log("phone: " + this.state.phone);
     console.log("description: " + this.state.description);
     this.setState({...Component, settingModalVisible: visible});
+    
+    console.log("Visible is true, will call getProfilePicture " + global.email);
+    this.getProfilePicture(global.email);
   }
 
   setMatchModalVisible = (visible) => {
@@ -230,6 +317,114 @@ export default class mainScreen extends Component {
 
   setTempName = async (val) => {
     this.setState({ tempName: val });
+  }
+
+  setProfilePicture = async() => {
+  try {
+    console.log("image uri: " + this.state.image);
+    let data = new FormData();
+    data.append('profile_picture', {uri : this.state.image, type : this.get_content_type(this.state.image), name: this.get_file_name(this.state.image)});
+    data.append('email_str', global.email.trim());
+    data.append('access_token_str', global.accessToken);
+
+    const response = await fetch('https://kindling-lp.herokuapp.com/api/upload_profile_picture', 
+      {method:'POST', body:data, headers:{'Content-Type':'multipart/form-data'}});
+
+    var res = JSON.parse(await response.text());
+
+    if (res.success_bool == true) {
+      global.accessToken = res.refreshed_token_str;
+      console.log("Global access token: " + global.accessToken);
+      console.log("Success setting profile picture");
+    }
+    else {
+      global.pfpError = true;
+      console.log("Setting profile picture unsuccessful");
+      console.log("Error code: " + res.error_code_int);
+    }
+  }
+  catch {
+    console.log("Something went wrong when setting profile picture");
+  }
+}
+
+  getProfilePicture = async(val) => {
+    try{
+      var sendInfo = {
+        email_str: val.trim(),
+        access_token_str: global.accessToken
+      }
+
+      let jsonObj = JSON.stringify(sendInfo);
+
+      const response = await fetch('https://kindling-lp.herokuapp.com/api/get_profile_picture', 
+      {method:'POST', body:jsonObj, headers:{'Content-Type':'application/json'}});
+
+      const blob = response._bodyBlob;
+
+      const fileReaderInstance = new FileReader();
+        fileReaderInstance.readAsDataURL(blob); 
+        fileReaderInstance.onload = () => {
+          const base64data = fileReaderInstance.result;   
+          this.setState({ image: base64data });
+       }
+    }
+    catch{
+      console.log("Fail to use the function getProfilePicture");
+    }
+  }
+
+  getCandPicture = async(val) => {
+    try{
+      var sendInfo = {
+        email_str: val.trim(),
+        access_token_str: global.accessToken
+      }
+
+      let jsonObj = JSON.stringify(sendInfo);
+
+      const response = await fetch('https://kindling-lp.herokuapp.com/api/get_profile_picture', 
+      {method:'POST', body:jsonObj, headers:{'Content-Type':'application/json'}});
+
+      const blob = response._bodyBlob;
+
+      const fileReaderInstance = new FileReader();
+        fileReaderInstance.readAsDataURL(blob); 
+        fileReaderInstance.onload = () => {
+          const base64data = fileReaderInstance.result;   
+          this.setState({ candProfilePic: base64data });
+       }
+    }
+    catch{
+      console.log("Fail to use the function getProfilePicture");
+    }
+  }
+
+   getMatchPicture = async(val) => {
+    try{
+      var sendInfo = {
+        email_str: val.trim(),
+        access_token_str: global.accessToken
+      }
+      let jsonObj = JSON.stringify(sendInfo);
+
+      const response = await fetch('https://kindling-lp.herokuapp.com/api/get_profile_picture', 
+      {method:'POST', body:jsonObj, headers:{'Content-Type':'application/json'}});
+
+      const blob = response._bodyBlob;
+
+      const fileReaderInstance = new FileReader();
+        fileReaderInstance.readAsDataURL(blob); 
+        fileReaderInstance.onload = () => {
+          const base64data = fileReaderInstance.result;   
+          console.log("The base 64 data:");             
+          console.log(base64data);
+          this.setState({ displayMatchProfilePicture: base64data });
+       }
+    }
+    catch{
+      console.log("Fail to use the function getProfilePicture");
+    }
   }
   
   // Turn phone number string into a general format.
@@ -274,10 +469,7 @@ export default class mainScreen extends Component {
   }
 
   pushMatchesArray = async (val) => {
-    // this.setState({ myArray: [this.state.myArray, val] });
     this.setState({ matchesArray: [...this.state.matchesArray, val] });
-    // this.setState({ matchesArray: val });
-    // this.state.matchesArray.push(val);
   }
 
   resetMatchesArray = async() => {
@@ -439,10 +631,12 @@ export default class mainScreen extends Component {
         console.log("group bool: " + global.group);
         if (global.group == true) {
           this.getProfIndiv();
+          this.getCandPicture(this.state.candEmail);
           console.log("Got the individual's info!");
         }
         else {
           this.getProfGroup();
+          this.getCandPicture(this.state.candEmail);
           console.log("Got the group info!");
         }
       }
@@ -531,6 +725,8 @@ export default class mainScreen extends Component {
         let nameArr = global.fullName.split(" ");
         global.firstName = nameArr[0];
         global.lastName = nameArr[1];
+
+        this.setProfilePicture();
 
         console.log("Profile info updated successfully");
         this.setSettingModalVisible(false);
@@ -623,6 +819,27 @@ export default class mainScreen extends Component {
     }
   }
 
+  setImage = async(val) => {
+    this.setState({ image: val });
+    global.picture = val;
+  }
+
+  addImage = async() => {
+    let _image = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4,3],
+      quality: 1,
+    });
+
+    console.log(JSON.stringify(_image));
+
+    if (!_image.cancelled) {
+      console.log("Image type: " + _image.type);
+      this.setImage(_image.uri);
+    }
+  }
+
   componentDidMount(){
     this.getCand();
   }
@@ -658,6 +875,43 @@ export default class mainScreen extends Component {
                   <Pressable onPress={() => this.setSettingModalVisible(false)}>
                     <Text style={styles.closeButton}>X</Text>
                   </Pressable>
+                </View>
+                
+                {/* <Image source={person} style={{ width: "100%", heigth: "100%", paddingBottom: "25%"}}/> */}
+                <View style={{elevation:2,
+                    // marginTop: 100,
+                    height: 175,
+                    width:200, 
+                    backgroundColor:'#efefef',
+                    position:'relative',
+                    borderRadius:999,
+                    overflow:'hidden',}}>
+                    {
+                      <Image source={{ uri: this.state.image }} style={{ width: 200, height: 200 }} />
+                    }
+              
+                    <View style={{
+                            opacity:0.7,
+                            position:'absolute',
+                            right:0,
+                            bottom:0,
+                            backgroundColor:'black',
+                            width:'100%',
+                            height:'25%',
+                        }}>
+                        <TouchableOpacity onPress={this.addImage} style={{
+                                display:'flex',
+                                alignItems:"center",
+                                justifyContent:'center'
+                            }} >
+                            <Text style={{
+                            fontSize: 18,
+                            marginTop: 8,
+                            color: "white",
+                            // fontWeight: "bold",
+                          }}>{this.state.image ? 'Edit' : 'Upload'} Image</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* FIXME: CHECK WITH KIERSTEN IF WE CAN JUST USE THE GLOBAL VARIABLES FOR THE PLACEHOLDER OR WE NEED TO USE THE STATES*/}
@@ -704,9 +958,21 @@ export default class mainScreen extends Component {
               <View style={styles.centeredView}>
                 <View style={styles.modalView}>
                   <View style={styles.mainHeader}>
-                    <Text style={styles.modalHeader}>{global.group ? "Group Name" : "Individual Name"}</Text>
+
+                    <View style={{elevation:2,
+                        // marginTop: 100,
+                        height: 175,
+                        width:200, 
+                        backgroundColor:'#efefef',
+                        position:'relative',
+                        borderRadius:999,
+                        overflow:'hidden',}}>
+                          <Image source={{ uri: this.state.displayMatchProfilePicture }} style={{ width: 200, height: 200 }} />
+                    </View>
                     <Text style={styles.closeButton} onPress={this.undisplayMatch}>X</Text>
                   </View>
+
+                  <Text style={styles.modalHeader}>{global.group ? "Group Name" : "Individual Name"}</Text>
                   <Text>{this.state.displayMatchTitle}</Text>
                   <Text style={styles.modalHeader}>Email:</Text>
                   <Text>{this.state.displayMatchEmail}</Text>
@@ -817,7 +1083,7 @@ const styles = StyleSheet.create({
     marginTop: 9,
   },
   modalContent: {
-    paddingTop: "15%",
+    // paddingTop: "15%",
   },
   mainHeader: {
     flexDirection: "row",
@@ -834,7 +1100,7 @@ const styles = StyleSheet.create({
     borderColor: "#C6C4C4",
     borderWidth: 1,
     borderRadius: 10,
-    height: "40%",
+    height: "30%",
     textAlignVertical: "top",
     padding: "2%",
     marginBottom: 10,

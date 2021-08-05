@@ -5,9 +5,12 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "eject": "expo eject"
+    "eject": "expo eject",
+    "test": "jest --verbose"
   },
   "dependencies": {
+    "@testing-library/react-native": "^7.2.0",
+    "axios": "^0.21.1",
     "expo": "~41.0.1",
     "expo-status-bar": "~1.0.4",
     "net": "^1.0.2",
@@ -19,10 +22,30 @@
     "react-native-swipe-gestures": "^1.0.5",
     "react-native-web": "^0.17.1",
     "react-navigation": "^4.4.4",
-    "react-navigation-stack": "^2.10.4"
+    "react-navigation-stack": "^2.10.4",
+    "expo-image-picker": "~10.1.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.9.0"
+    "@babel/core": "^7.9.0",
+    "@testing-library/jest-native": "^4.0.2",
+    "jest": "^26.0",
+    "react-test-renderer": "^17.0.2"
+  },
+  "jest": {
+    "preset": "react-native",
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-native/extend-expect"
+    ],
+    "transformIgnorePatterns": [
+      "/node_modules/(?!react-native|react-clone-referenced-element|react-navigation|expo-status-bar)"
+    ],
+    "moduleDirectories": [
+      "node_modules"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "jsx"
+    ]
   },
   "private": true
 }
