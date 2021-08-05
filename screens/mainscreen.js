@@ -46,8 +46,10 @@ export default class mainScreen extends Component {
       displayMatchEmail: "Loading...",
       displayMatchPhone: "Loading...",
       displayMatchDesc: "Loading...",
+
       displayMatchProfilePicture: "https://thumbs.dreamstime.com/b/school-science-radiation-atom-books-bacteria-miscroscope-vector-illustration-design-144774102.jpg",
       image: "https://thumbs.dreamstime.com/b/school-science-radiation-atom-books-bacteria-miscroscope-vector-illustration-design-144774102.jpg"
+
     };
     this.handleYup = this.handleYup.bind(this);
     this.handleNope = this.handleNope.bind(this);
@@ -99,12 +101,16 @@ export default class mainScreen extends Component {
     console.log("group bool: " + global.group);
     if (global.group == true) {
       this.getMatchProfIndiv(val);
+
       this.getMatchPicture(val);
+
       console.log("Got the individual's info!");
     }
     else {
       this.getMatchProfGroup(val);
+
       this.getMatchPicture(val);
+
       console.log("Got the group info!");
     }
     
@@ -118,6 +124,7 @@ export default class mainScreen extends Component {
     this.setState({displayMatchPhone: "Loading..."});
     this.setState({displayMatchDesc: "Loading..."});
   }
+
 
   get_content_type(uri_str)
   {
@@ -951,6 +958,7 @@ export default class mainScreen extends Component {
               <View style={styles.centeredView}>
                 <View style={styles.modalView}>
                   <View style={styles.mainHeader}>
+
                     <View style={{elevation:2,
                         // marginTop: 100,
                         height: 175,
